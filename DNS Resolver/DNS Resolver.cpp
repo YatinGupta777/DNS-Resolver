@@ -4,18 +4,38 @@
 #include "pch.h"
 #include <iostream>
 
-int main()
+/* DNS query types */
+#define DNS_A 1 /* name -> IP */
+#define DNS_NS 2 /* name server */
+#define DNS_CNAME 5 /* canonical name */
+#define DNS_PTR 12 /* IP -> name */
+#define DNS_HINFO 13 /* host info/SOA */
+#define DNS_MX 15 /* mail exchange */
+#define DNS_AXFR 252 /* request for zone transfer */
+#define DNS_ANY 255 /* all records */ 
+
+/* query classes */
+#define DNS_INET 1
+
+int main(int argc, char** argv)
 {
     std::cout << "Hello World!\n";
+
+    if (argc != 3)
+    {
+        printf("Please pass only URL in format -> scheme://host[:port][/path][?query][#fragment]\n");
+        printf("OR\n");
+    }
+
+    char* t1 = argv[1];
+    char* t2 = argv[2];
+
+    printf("%s\n", t1);
+    printf("%s\n", t2);
+
+    DWORD IP = inet_addr(t1);
+    if (IP == INADDR_NONE)
+    {
+
+    }
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file

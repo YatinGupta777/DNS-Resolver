@@ -7,6 +7,6 @@
 #ifndef PCH_H
 #define PCH_H
 
-// add headers that you want to pre-compile here
+#include<winsock2.h>
 
 #endif //PCH_H
