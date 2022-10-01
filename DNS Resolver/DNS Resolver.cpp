@@ -3,6 +3,9 @@
 
 #include "pch.h"
 #include <iostream>
+#pragma comment(lib, "ws2_32.lib")
+
+using namespace std;
 
 /* DNS query types */
 #define DNS_A 1 /* name -> IP */
@@ -17,6 +20,8 @@
 /* query classes */
 #define DNS_INET 1
 
+#define MAX_DNS_LEN 512
+
 int main(int argc, char** argv)
 {
     std::cout << "Hello World!\n";
@@ -27,15 +32,15 @@ int main(int argc, char** argv)
         printf("OR\n");
     }
 
-    char* t1 = argv[1];
-    char* t2 = argv[2];
+    char* lookup_host = argv[1];
+    char* dns_server_ip = argv[2];
 
-    printf("%s\n", t1);
-    printf("%s\n", t2);
+    printf("%s\n", lookup_host);
+    printf("%s\n", dns_server_ip);
 
-    DWORD IP = inet_addr(t1);
+    DWORD IP = inet_addr(lookup_host);
     if (IP == INADDR_NONE)
     {
-
+        printf("NO IP YO");
     }
 }
