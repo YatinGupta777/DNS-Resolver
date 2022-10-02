@@ -55,6 +55,27 @@ public:
 };
 #pragma pack(pop)
 
+void makeDNSQuestion(char* buf, char* host)
+{
+    int buf_position = 0;
+    
+    char* start = host;
+    char* temp = strchr(host, '.');
+    char length = temp - start;
+    while (temp != NULL) {
+        length = temp - start;
+        buf[buf_position++] = length;
+        memcpy(buf + buf_position, start, length);
+        buf_position += length;
+        start = temp + 1;
+        temp = strchr(temp + length, '.');
+    }
+    length = strlen(start);
+    buf[buf_position++] = length;
+    memcpy(buf + buf_position, start, length);
+    buf_position += length;
+    buf[buf_position] = '0';
+}
 
 int main(int argc, char** argv)
 {
@@ -66,13 +87,13 @@ int main(int argc, char** argv)
         printf("OR\n");
     }
 
-    string lookup_host = argv[1];
-    string dns_server_ip = argv[2];
+    char* lookup_host = argv[1];
+    char* dns_server_ip = argv[2];
 
     printf("%s\n", lookup_host);
     printf("%s\n", dns_server_ip);
 
-    int pkt_size = strlen(lookup_host.c_str()) + 2 + sizeof(FixedDNSheader) + sizeof(QueryHeader);
+    int pkt_size = strlen(lookup_host) + 2 + sizeof(FixedDNSheader) + sizeof(QueryHeader);
     char* buf = new char[pkt_size];
 
     FixedDNSheader* fdh = (FixedDNSheader*)buf;
@@ -85,7 +106,7 @@ int main(int argc, char** argv)
     fdh->answers = htons(0);
     fdh->additional = htons(0);
 
-    DWORD IP = inet_addr(lookup_host.c_str());
+    DWORD IP = inet_addr(lookup_host);
     qh->type=htons(DNS_PTR);
     if (IP == INADDR_NONE)
     {
@@ -94,4 +115,10 @@ int main(int argc, char** argv)
     else {
     }
     qh->c = htons(DNS_INET);
+
+    int length = strlen(lookup_host) + 1;
+    char* original_link = new char[length];
+    strcpy_s(original_link, length, lookup_host);
+
+    makeDNSQuestion((char*)fdh + 1, original_link);
 }
