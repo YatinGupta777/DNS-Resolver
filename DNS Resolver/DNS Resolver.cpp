@@ -78,7 +78,12 @@ int main(int argc, char** argv)
     FixedDNSheader* fdh = (FixedDNSheader*)buf;
     QueryHeader* qh = (QueryHeader*)(buf + pkt_size - sizeof(QueryHeader));
 
+    fdh->ID = htons(1);
     fdh->flags = htons(DNS_QUERY | DNS_RD | DNS_STDQUERY);
+    fdh->questions = htons(1);
+    fdh->auth = htons(0);
+    fdh->answers = htons(0);
+    fdh->additional = htons(0);
 
     DWORD IP = inet_addr(lookup_host.c_str());
     qh->type=htons(DNS_PTR);
