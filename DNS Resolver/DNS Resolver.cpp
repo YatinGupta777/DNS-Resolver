@@ -74,7 +74,7 @@ void makeDNSQuestion(char* buf, char* host)
     buf[buf_position++] = length;
     memcpy(buf + buf_position, start, length);
     buf_position += length;
-    buf[buf_position] = '0';
+    buf[buf_position] = 0;
 }
 
 int main(int argc, char** argv)
