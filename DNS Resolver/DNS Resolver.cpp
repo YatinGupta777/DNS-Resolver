@@ -120,8 +120,6 @@ int main(int argc, char** argv)
     {
         qh->type = htons(DNS_A);
     }
-    else {
-    }
     qh->c = htons(DNS_INET);
 
     int length = strlen(lookup_host) + 1;
@@ -175,6 +173,18 @@ int main(int argc, char** argv)
         int resp_size = sizeof(resp);
 
         int available = select(0, &fd, NULL, NULL, &tp);
+
+        if (available == 0) {
+            printf("timeout\n");
+            return 0;
+        }
+
+        if (available == SOCKET_ERROR)
+        {
+            printf("select error %d\n", WSAGetLastError());
+            return 0;
+        };
+
         if (available > 0)
         {
             int bytes_received = recvfrom(sock, buf, MAX_DNS_LEN, 0, (struct sockaddr*) &resp, &resp_size);
