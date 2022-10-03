@@ -152,10 +152,41 @@ int main(int argc, char** argv)
     memset(&remote, 0, sizeof(remote));
     remote.sin_family = AF_INET;
     remote.sin_addr.S_un.S_addr = inet_addr(dns_server_ip); // server’s IP
-    remote.sin_port = htons(53); // DNS port on server
-    if (sendto(sock, buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
+    remote.sin_port = htons(53); // DNS port on serve
+
+    int count = 0;
+    while (count++ < 1)
     {
-        printf("send to() generated error %d\n", WSAGetLastError());
-        return 0;
+        if (sendto(sock, buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
+        {
+            printf("send to() generated error %d\n", WSAGetLastError());
+            return 0;
+        };
+        // get ready to receive
+        
+        fd_set fd;
+        FD_ZERO(&fd); // clear the set
+        FD_SET(sock, &fd); // add your socket to the set
+        timeval tp;
+        tp.tv_sec = 10;
+        tp.tv_usec = 0;
+
+        struct sockaddr_in resp;
+        int resp_size = sizeof(resp);
+
+        int available = select(0, &fd, NULL, NULL, &tp);
+        if (available > 0)
+        {
+            int bytes_received = recvfrom(sock, buf, MAX_DNS_LEN, 0, (struct sockaddr*) &resp, &resp_size);
+            // parse the response
+            // break from the loop
+            if (bytes_received == SOCKET_ERROR)
+            {
+                printf("bytes_received to() generated error %d\n", WSAGetLastError());
+                return 0;
+            };
+        }
+        // error checking here
     }
+
 }
