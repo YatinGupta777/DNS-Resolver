@@ -79,12 +79,20 @@ void makeDNSQuestion(char* buf, char* host)
 
 int main(int argc, char** argv)
 {
-    std::cout << "Hello World!\n";
-
     if (argc != 3)
     {
         printf("Please pass only URL in format -> scheme://host[:port][/path][?query][#fragment]\n");
         printf("OR\n");
+    }
+
+    WSADATA wsaData;
+
+    //Initialize WinSock; once per program run 
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    if (WSAStartup(wVersionRequested, &wsaData) != 0) {
+        printf("WSAStartup failed with %d\n", WSAGetLastError());
+        WSACleanup();
+        return 0;
     }
 
     char* lookup_host = argv[1];
@@ -121,4 +129,33 @@ int main(int argc, char** argv)
     strcpy_s(original_link, length, lookup_host);
 
     makeDNSQuestion((char*)fdh + 1, original_link);
+
+    SOCKET sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock == INVALID_SOCKET)
+    {
+        printf("socket() generated error %d\n", WSAGetLastError());
+        return 0;
+    }
+ 
+    struct sockaddr_in local;
+    memset(&local, 0, sizeof(local));
+    local.sin_family = AF_INET;
+    local.sin_addr.s_addr = INADDR_ANY;
+    local.sin_port = htons(0);
+    if (bind(sock, (struct sockaddr*)&local, sizeof(local)) == SOCKET_ERROR)
+    {
+         printf("bind() generated error %d\n", WSAGetLastError());
+         return 0;
+    }
+
+    struct sockaddr_in remote;
+    memset(&remote, 0, sizeof(remote));
+    remote.sin_family = AF_INET;
+    remote.sin_addr.S_un.S_addr = inet_addr(dns_server_ip); // server’s IP
+    remote.sin_port = htons(53); // DNS port on server
+    if (sendto(sock, buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
+    {
+        printf("send to() generated error %d\n", WSAGetLastError());
+        return 0;
+    }
 }
