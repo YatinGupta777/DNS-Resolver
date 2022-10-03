@@ -42,8 +42,8 @@ public:
     USHORT ID;
     USHORT flags;
     USHORT questions;
-    USHORT auth;
     USHORT answers;
+    USHORT auth;
     USHORT additional;
 };
 class DNSanswerHdr {
@@ -102,10 +102,10 @@ int main(int argc, char** argv)
     printf("%s\n", dns_server_ip);
 
     int pkt_size = strlen(lookup_host) + 2 + sizeof(FixedDNSheader) + sizeof(QueryHeader);
-    char* buf = new char[pkt_size];
-
-    FixedDNSheader* fdh = (FixedDNSheader*)buf;
-    QueryHeader* qh = (QueryHeader*)(buf + pkt_size - sizeof(QueryHeader));
+    char* req_buf = new char[pkt_size];
+    
+    FixedDNSheader* fdh = (FixedDNSheader*)req_buf;
+    QueryHeader* qh = (QueryHeader*)(req_buf + pkt_size - sizeof(QueryHeader));
 
     fdh->ID = htons(1);
     fdh->flags = htons(DNS_QUERY | DNS_RD | DNS_STDQUERY);
@@ -113,6 +113,8 @@ int main(int argc, char** argv)
     fdh->auth = htons(0);
     fdh->answers = htons(0);
     fdh->additional = htons(0);
+
+    printf("%d\n", sizeof(fdh));
 
     DWORD IP = inet_addr(lookup_host);
     qh->type=htons(DNS_PTR);
@@ -126,7 +128,8 @@ int main(int argc, char** argv)
     char* original_link = new char[length];
     strcpy_s(original_link, length, lookup_host);
 
-    makeDNSQuestion((char*)fdh + 1, original_link);
+    //makeDNSQuestion((char*)fdh + 1, original_link);
+    printf("%d\n", sizeof(req_buf));
 
     SOCKET sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == INVALID_SOCKET)
@@ -153,9 +156,10 @@ int main(int argc, char** argv)
     remote.sin_port = htons(53); // DNS port on serve
 
     int count = 0;
-    while (count++ < 1)
+    while (count++ < 2)
     {
-        if (sendto(sock, buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
+        printf("%s\n", req_buf);
+        if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
         {
             printf("send to() generated error %d\n", WSAGetLastError());
             return 0;
@@ -171,7 +175,7 @@ int main(int argc, char** argv)
 
         struct sockaddr_in resp;
         int resp_size = sizeof(resp);
-
+        char* res_buf = new char[MAX_DNS_LEN];
         int available = select(0, &fd, NULL, NULL, &tp);
 
         if (available == 0) {
@@ -187,7 +191,7 @@ int main(int argc, char** argv)
 
         if (available > 0)
         {
-            int bytes_received = recvfrom(sock, buf, MAX_DNS_LEN, 0, (struct sockaddr*) &resp, &resp_size);
+            int bytes_received = recvfrom(sock, res_buf, MAX_DNS_LEN, 0, (struct sockaddr*) &resp, &resp_size);
             // parse the response
             // break from the loop
             if (bytes_received == SOCKET_ERROR)
