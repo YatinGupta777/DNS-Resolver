@@ -128,8 +128,7 @@ int main(int argc, char** argv)
     char* original_link = new char[length];
     strcpy_s(original_link, length, lookup_host);
 
-    //makeDNSQuestion((char*)fdh + 1, original_link);
-    printf("%d\n", sizeof(req_buf));
+    makeDNSQuestion((char*)(fdh + 1), original_link);
 
     SOCKET sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == INVALID_SOCKET)
@@ -192,6 +191,7 @@ int main(int argc, char** argv)
         if (available > 0)
         {
             int bytes_received = recvfrom(sock, res_buf, MAX_DNS_LEN, 0, (struct sockaddr*) &resp, &resp_size);
+            printf("available %d\n", bytes_received);
             // parse the response
             // break from the loop
             if (bytes_received == SOCKET_ERROR)
