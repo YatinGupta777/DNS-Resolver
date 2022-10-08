@@ -174,6 +174,7 @@ int main(int argc, char** argv)
     int count = 0;
     while (count++ < MAX_ATTEMPTS)
     {
+        printf("Attempt %d with %d bytes...", count, sizeof(req_buf));
         if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
         {
             printf("send to() generated error %d\n", WSAGetLastError());
@@ -188,8 +189,8 @@ int main(int argc, char** argv)
         tp.tv_sec = 10;
         tp.tv_usec = 0;
 
-        struct sockaddr_in resp;
-        int resp_size = sizeof(resp);
+        struct sockaddr_in res_server;
+        int res_server_size = sizeof(res_server);
         char* res_buf = new char[MAX_DNS_LEN];
         int available = select(0, &fd, NULL, NULL, &tp);
 
@@ -206,15 +207,27 @@ int main(int argc, char** argv)
 
         if (available > 0)
         {
-            int bytes_received = recvfrom(sock, res_buf, MAX_DNS_LEN, 0, (struct sockaddr*) &resp, &resp_size);
-            printf("available %d\n", bytes_received);
-            // parse the response
-            // break from the loop
+            int bytes_received = recvfrom(sock, res_buf, MAX_DNS_LEN, 0, (struct sockaddr*) &res_server, &res_server_size);
+
+            if (res_server.sin_addr.S_un.S_addr != remote.sin_addr.S_un.S_addr || res_server.sin_port != remote.sin_port) {
+                printf("COMPLAIN\n");
+                return 0;
+            }
+
             if (bytes_received == SOCKET_ERROR)
             {
                 printf("bytes_received to() generated error %d\n", WSAGetLastError());
                 return 0;
             };
+            
+           // int off = ( (ans[curPos] & 0x3F) << 8) + ans[curPos + 1];
+            printf("response in with %d bytes\n", sizeof(res_buf));
+            FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
+
+            printf("TXID %d flags %d questions %d answers %d authority %d additional %d\n",
+                htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
+
+            break;
         }
         // error checking here
     }
