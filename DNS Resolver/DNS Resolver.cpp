@@ -86,11 +86,16 @@ void makeDNSQuestion(char* buf, char* host)
     buf[buf_position] = 0;
 }
 
-void read_question(char* buf, int& curr_pos) {
-    char length = buf[curr_pos];
-    while (length != 0) {
-        curr_pos += length;
-        length = buf[curr_pos];
+void read_questions(char* buf, int& curr_pos, int nQuestions) {
+
+    for (int i = 0; i < nQuestions; i++)
+    {
+        unsigned char length = buf[curr_pos];
+        while (length != 0) {
+            curr_pos += length + 1;
+            length = buf[curr_pos];
+        }
+        curr_pos += 4;
     }
 }
 
@@ -243,15 +248,17 @@ int main(int argc, char** argv)
             
             int curr_pos = 12;
             
-            read_question(res_buf, curr_pos);
+            read_questions(res_buf, curr_pos, htons(res_fdh->questions));
+            
+            curr_pos++;
 
-           /* if ((unsigned char)res_buf[currPos] >= 0xc0)
+            if ((unsigned char)res_buf[curr_pos] >= 0xc0)
             {
                 printf("Compressed\n");
             }
             else {
                 printf("uncompressed\n");
-            }*/
+            }
 
             break;
         }
