@@ -7,6 +7,10 @@
 
 using namespace std;
 
+/* constants */
+#define MAX_DNS_LEN 512
+#define MAX_ATTEMPTS 3
+
 /* DNS query types */
 #define DNS_A 1 /* name -> IP */
 #define DNS_NS 2 /* name server */
@@ -19,8 +23,6 @@ using namespace std;
 
 /* query classes */
 #define DNS_INET 1
-
-#define MAX_DNS_LEN 512
 
 /* flags */
 #define DNS_QUERY (0 << 15) /* 0 = query; 1 = response */
@@ -101,6 +103,26 @@ int main(int argc, char** argv)
     printf("%s\n", lookup_host);
     printf("%s\n", dns_server_ip);
 
+    DWORD IP = inet_addr(lookup_host);
+    USHORT query_type = htons(DNS_PTR);
+
+    if (IP == INADDR_NONE)
+    {
+        query_type = htons(DNS_A);
+    }
+    else {
+        //reverse IP
+        struct in_addr ia;
+        ia.S_un.S_addr = htonl(IP);
+        char* t = inet_ntoa(ia);
+        const char* t2 = ".in-addr.arpa";
+
+        char* str3 = (char*)malloc(1 + strlen(t) + strlen(t2));
+        strcpy(str3, t);
+        strcat(str3, t2);
+        lookup_host = str3;
+    }
+
     int pkt_size = strlen(lookup_host) + 2 + sizeof(FixedDNSheader) + sizeof(QueryHeader);
     char* req_buf = new char[pkt_size];
     
@@ -114,15 +136,10 @@ int main(int argc, char** argv)
     fdh->answers = htons(0);
     fdh->additional = htons(0);
 
-    printf("%d\n", sizeof(fdh));
-
-    DWORD IP = inet_addr(lookup_host);
-    qh->type=htons(DNS_PTR);
-    if (IP == INADDR_NONE)
-    {
-        qh->type = htons(DNS_A);
-    }
+    qh->type = query_type;
     qh->c = htons(DNS_INET);
+
+    printf("%d\n", sizeof(fdh));
 
     int length = strlen(lookup_host) + 1;
     char* original_link = new char[length];
@@ -155,9 +172,8 @@ int main(int argc, char** argv)
     remote.sin_port = htons(53); // DNS port on serve
 
     int count = 0;
-    while (count++ < 2)
+    while (count++ < MAX_ATTEMPTS)
     {
-        printf("%s\n", req_buf);
         if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
         {
             printf("send to() generated error %d\n", WSAGetLastError());
