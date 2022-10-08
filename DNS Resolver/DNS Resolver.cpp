@@ -33,6 +33,13 @@ using namespace std;
 #define DNS_RD (1 << 8) /* recursion desired */
 #define DNS_RA (1 << 7) /* recursion available */
 
+#define DNS_OK 0 /* success */
+#define DNS_FORMAT 1 /* format error (unable to interpret) */
+#define DNS_SERVERFAIL 2 /* can’t find authority nameserver */
+#define DNS_ERROR 3 /* no DNS entry */
+#define DNS_NOTIMPL 4 /* not implemented */
+#define DNS_REFUSED 5 /* server refused the query */
+
 #pragma pack(push,1) 
 class QueryHeader{
 public:
@@ -77,6 +84,14 @@ void makeDNSQuestion(char* buf, char* host)
     memcpy(buf + buf_position, start, length);
     buf_position += length;
     buf[buf_position] = 0;
+}
+
+void read_question(char* buf, int& curr_pos) {
+    char length = buf[curr_pos];
+    while (length != 0) {
+        curr_pos += length;
+        length = buf[curr_pos];
+    }
 }
 
 int main(int argc, char** argv)
@@ -138,8 +153,6 @@ int main(int argc, char** argv)
 
     qh->type = query_type;
     qh->c = htons(DNS_INET);
-
-    printf("%d\n", sizeof(fdh));
 
     int length = strlen(lookup_host) + 1;
     char* original_link = new char[length];
@@ -221,11 +234,24 @@ int main(int argc, char** argv)
             };
             
            // int off = ( (ans[curPos] & 0x3F) << 8) + ans[curPos + 1];
-            printf("response in with %d bytes\n", sizeof(res_buf));
+            printf("response in with %d bytes\n", bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
+            printf("Size %d\n", sizeof(res_fdh));
 
             printf("TXID %d flags %d questions %d answers %d authority %d additional %d\n",
                 htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
+            
+            int curr_pos = 12;
+            
+            read_question(res_buf, curr_pos);
+
+           /* if ((unsigned char)res_buf[currPos] >= 0xc0)
+            {
+                printf("Compressed\n");
+            }
+            else {
+                printf("uncompressed\n");
+            }*/
 
             break;
         }
