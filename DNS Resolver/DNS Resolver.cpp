@@ -99,6 +99,29 @@ void read_questions(char* buf, int& curr_pos, int nQuestions) {
     }
 }
 
+int jump(char* res_buf, int curr_pos) {
+
+    unsigned char current_value = (unsigned char)res_buf[curr_pos];
+    printf("current_value %d\n", current_value);
+
+    if (current_value == 0)
+    {
+        return curr_pos + 1;
+    }
+    else if (current_value >= 0xC0)
+    {
+        printf("Compressed\n");
+        int off = ((res_buf[curr_pos] & 0x3F) << 8) + res_buf[curr_pos + 1];
+        jump(res_buf, off);
+        return curr_pos + 2;
+    }
+    else {
+        curr_pos += current_value + 1;
+        printf("uncompressed\n");
+        jump(res_buf, curr_pos);
+    }
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 3)
@@ -241,7 +264,6 @@ int main(int argc, char** argv)
            // int off = ( (ans[curPos] & 0x3F) << 8) + ans[curPos + 1];
             printf("response in with %d bytes\n", bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
-            printf("Size %d\n", sizeof(res_fdh));
 
             printf("TXID %d flags %d questions %d answers %d authority %d additional %d\n",
                 htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
@@ -249,16 +271,11 @@ int main(int argc, char** argv)
             int curr_pos = 12;
             
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
-            
             curr_pos++;
 
-            if ((unsigned char)res_buf[curr_pos] >= 0xc0)
-            {
-                printf("Compressed\n");
-            }
-            else {
-                printf("uncompressed\n");
-            }
+            printf("curr_pos %d\n", curr_pos);
+            curr_pos = jump(res_buf, curr_pos);
+            printf("curr_pos %d\n", curr_pos);
 
             break;
         }
