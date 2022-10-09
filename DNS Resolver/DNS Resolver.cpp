@@ -117,8 +117,12 @@ int jump(char* res_buf, int curr_pos) {
         return curr_pos + 2;
     }
     else {
-        curr_pos += current_value + 1;
-        //printf("uncompressed\n");
+        curr_pos++; // skip byte size
+        char* str = new char[current_value + 1];
+        memcpy(str, res_buf + curr_pos, current_value);
+        str[current_value] = '\0';
+        curr_pos += current_value;
+        printf("%s", str);
         jump(res_buf, curr_pos);
     }
 }
@@ -292,6 +296,9 @@ int main(int argc, char** argv)
                     int x4 = (unsigned char)res_buf[curr_pos + 3];
 
                     printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
+                }
+                else {
+
                 }
 
                 curr_pos += htons(dah->len);
