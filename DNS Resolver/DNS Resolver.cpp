@@ -103,7 +103,7 @@ void read_questions(char* buf, int& curr_pos, int nQuestions) {
 int jump(char* res_buf, int curr_pos) {
 
     unsigned char current_value = (unsigned char)res_buf[curr_pos];
-    printf("current_value %d\n", current_value);
+    //printf("current_value %d\n", current_value);
 
     if (current_value == 0)
     {
@@ -111,14 +111,14 @@ int jump(char* res_buf, int curr_pos) {
     }
     else if (current_value >= 0xC0)
     {
-        printf("Compressed\n");
+        //printf("Compressed\n");
         int off = ((res_buf[curr_pos] & 0x3F) << 8) + res_buf[curr_pos + 1];
         jump(res_buf, off);
         return curr_pos + 2;
     }
     else {
         curr_pos += current_value + 1;
-        printf("uncompressed\n");
+        //printf("uncompressed\n");
         jump(res_buf, curr_pos);
     }
 }
@@ -274,27 +274,28 @@ int main(int argc, char** argv)
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
             curr_pos++;
 
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < htons(res_fdh->answers); i++) {
                 printf("curr_pos %d\n", curr_pos);
                 curr_pos = jump(res_buf, curr_pos);
                 printf("curr_pos %d\n", curr_pos);
 
                 DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
-
-                printf("type = %d\n", htons(dah->type));
-                printf("c = %d\n", htons(dah->c));
-                printf("TTL = %d\n", 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2));
-                printf("len = %d\n", htons(dah->len));
+                int query_type = htons(dah->type);
+                printf("type = %d c = %d TTL = %d len = %d\n", query_type, htons(dah->c), 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2), htons(dah->len));
 
                 curr_pos += 10;
 
-                int x1 = (unsigned char)res_buf[curr_pos];
-                int x2 = (unsigned char)res_buf[curr_pos+1];
-                int x3 = (unsigned char)res_buf[curr_pos+2];
-                int x4 = (unsigned char)res_buf[curr_pos+3];
+                if (query_type == DNS_A) {
+                    int x1 = (unsigned char)res_buf[curr_pos];
+                    int x2 = (unsigned char)res_buf[curr_pos + 1];
+                    int x3 = (unsigned char)res_buf[curr_pos + 2];
+                    int x4 = (unsigned char)res_buf[curr_pos + 3];
 
-                printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
+                    printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
+                }
 
+                curr_pos += htons(dah->len);
+                
             }
             
             break;
