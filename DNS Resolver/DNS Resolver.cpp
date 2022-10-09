@@ -334,6 +334,10 @@ int main(int argc, char** argv)
             int rcode = htons(res_fdh->flags) & 0x000f;
 
             if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
+            else {
+                printf("  failed with Rcode = %d\n", rcode);
+                return 0;
+            }
 
             int curr_pos = 12;
             printf("  ------------ [questions] ------------\n");
@@ -369,3 +373,5 @@ int main(int argc, char** argv)
     }
 
 }
+
+//C:\Users\yatingupta\source\repos\YatinGupta777\DNS-Resolver\x64\Debug
