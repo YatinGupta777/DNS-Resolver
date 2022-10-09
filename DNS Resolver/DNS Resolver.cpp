@@ -115,7 +115,7 @@ void read_questions(char* buf, int& curr_pos, int nQuestions) {
     }
 }
 
-int jump(char* res_buf, int curr_pos) {
+int jump(char* res_buf, int curr_pos, string& output) {
 
     unsigned char current_value = (unsigned char)res_buf[curr_pos];
     //printf("current_value %d\n", current_value);
@@ -128,7 +128,7 @@ int jump(char* res_buf, int curr_pos) {
     {
         //printf("Compressed\n");
         int off = ((res_buf[curr_pos] & 0x3F) << 8) + res_buf[curr_pos + 1];
-        jump(res_buf, off);
+        jump(res_buf, off, output);
         return curr_pos + 2;
     }
     else {
@@ -137,8 +137,12 @@ int jump(char* res_buf, int curr_pos) {
         memcpy(str, res_buf + curr_pos, current_value);
         str[current_value] = '\0';
         curr_pos += current_value;
-        printf("%s", str);
-        jump(res_buf, curr_pos);
+        output += str;
+
+        if ((unsigned char)res_buf[curr_pos] != 0) output += ".";
+
+        delete[] str;
+        jump(res_buf, curr_pos, output);
     }
 }
 
@@ -301,33 +305,43 @@ int main(int argc, char** argv)
             printf("  ------------ [questions] ------------\n");
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
 
-            for (int i = 0; i < htons(res_fdh->answers); i++) {
-                //printf("curr_pos %d\n", curr_pos);
-                curr_pos = jump(res_buf, curr_pos);
-                //printf("curr_pos %d\n", curr_pos);
+            if (htons(res_fdh->answers) > 0)
+            {
+                printf("  ------------ [answers] ------------------\n");
+                for (int i = 0; i < htons(res_fdh->answers); i++) {
+                    printf("  \t");
+                    string host_output;
+                    curr_pos = jump(res_buf, curr_pos, host_output);
+                    printf("%s ", host_output.c_str());
 
-                DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
-                int query_type = htons(dah->type);
-                printf("type = %d c = %d TTL = %d len = %d\n", query_type, htons(dah->c), 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2), htons(dah->len));
+                    DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
+                    int res_type_code = htons(dah->type);
+                    curr_pos += 10;
+                   
+                    if (res_type_code == DNS_A) {
+                        printf("A ");
+                        int x1 = (unsigned char)res_buf[curr_pos];
+                        int x2 = (unsigned char)res_buf[curr_pos + 1];
+                        int x3 = (unsigned char)res_buf[curr_pos + 2];
+                        int x4 = (unsigned char)res_buf[curr_pos + 3];
+                        printf("%d.%d.%d.%d ", x1, x2, x3, x4);
+                    }
+                    else {
+                        string res_type = "CNAME";
+                        if (res_type_code == DNS_PTR) res_type = "PTR";
+                        else if (res_type_code == DNS_NS) res_type = "NS";
 
-                curr_pos += 10;
+                        printf("%s ", res_type.c_str());
 
-                if (query_type == DNS_A) {
-                    int x1 = (unsigned char)res_buf[curr_pos];
-                    int x2 = (unsigned char)res_buf[curr_pos + 1];
-                    int x3 = (unsigned char)res_buf[curr_pos + 2];
-                    int x4 = (unsigned char)res_buf[curr_pos + 3];  
+                        string answer_output;
+                        jump(res_buf, curr_pos, answer_output);
+                    }
+                    printf("TTL = %d \n", 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2));
 
-                    printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
+                    curr_pos += htons(dah->len);
                 }
-                else {
-                    jump(res_buf, curr_pos);
-                }
-
-                curr_pos += htons(dah->len);
-                
             }
-            
+
             break;
         }
         // error checking here
