@@ -59,7 +59,8 @@ class DNSanswerHdr {
 public:
     u_short type;
     u_short c;
-    u_int ttl;
+    u_short ttl;
+    u_short ttl2;
     u_short len;
 };
 #pragma pack(pop)
@@ -273,10 +274,29 @@ int main(int argc, char** argv)
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
             curr_pos++;
 
-            printf("curr_pos %d\n", curr_pos);
-            curr_pos = jump(res_buf, curr_pos);
-            printf("curr_pos %d\n", curr_pos);
+            for (int i = 0; i < 1; i++) {
+                printf("curr_pos %d\n", curr_pos);
+                curr_pos = jump(res_buf, curr_pos);
+                printf("curr_pos %d\n", curr_pos);
 
+                DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
+
+                printf("type = %d\n", htons(dah->type));
+                printf("c = %d\n", htons(dah->c));
+                printf("TTL = %d\n", 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2));
+                printf("len = %d\n", htons(dah->len));
+
+                curr_pos += 10;
+
+                int x1 = (unsigned char)res_buf[curr_pos];
+                int x2 = (unsigned char)res_buf[curr_pos+1];
+                int x3 = (unsigned char)res_buf[curr_pos+2];
+                int x4 = (unsigned char)res_buf[curr_pos+3];
+
+                printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
+
+            }
+            
             break;
         }
         // error checking here
