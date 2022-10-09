@@ -148,8 +148,7 @@ int main(int argc, char** argv)
     char* lookup_host = argv[1];
     char* dns_server_ip = argv[2];
 
-    printf("%s\n", lookup_host);
-    printf("%s\n", dns_server_ip);
+    printf("Lookup : %s\n", lookup_host);
 
     DWORD IP = inet_addr(lookup_host);
     USHORT query_type = htons(DNS_PTR);
@@ -171,13 +170,18 @@ int main(int argc, char** argv)
         lookup_host = str3;
     }
 
+    USHORT TXID = htons(1);
+    printf("Query : %s, type %d, TXID %.4X\n", lookup_host, query_type, TXID);
+    printf("Server : %s\n", dns_server_ip);
+    printf("***************************************\n");
+
     int pkt_size = strlen(lookup_host) + 2 + sizeof(FixedDNSheader) + sizeof(QueryHeader);
     char* req_buf = new char[pkt_size];
     
     FixedDNSheader* fdh = (FixedDNSheader*)req_buf;
     QueryHeader* qh = (QueryHeader*)(req_buf + pkt_size - sizeof(QueryHeader));
 
-    fdh->ID = htons(1);
+    fdh->ID = TXID;
     fdh->flags = htons(DNS_QUERY | DNS_RD | DNS_STDQUERY);
     fdh->questions = htons(1);
     fdh->auth = htons(0);
@@ -270,11 +274,14 @@ int main(int argc, char** argv)
             printf("response in with %d bytes\n", bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
 
-            printf("TXID %d flags %d questions %d answers %d authority %d additional %d\n",
+            printf("  TXID %.4X, flags %.4X, questions %d, answers %d, authority %d, additional %d\n",
                 htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
             
+            int rcode = htons(res_fdh->flags) & 0x000f;
+
+            if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
+
             int curr_pos = 12;
-            
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
             curr_pos++;
 
@@ -293,7 +300,7 @@ int main(int argc, char** argv)
                     int x1 = (unsigned char)res_buf[curr_pos];
                     int x2 = (unsigned char)res_buf[curr_pos + 1];
                     int x3 = (unsigned char)res_buf[curr_pos + 2];
-                    int x4 = (unsigned char)res_buf[curr_pos + 3];
+                    int x4 = (unsigned char)res_buf[curr_pos + 3];  
 
                     printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
                 }
