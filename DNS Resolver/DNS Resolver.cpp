@@ -146,6 +146,40 @@ int jump(char* res_buf, int curr_pos, string& output) {
     }
 }
 
+void parse_response(char* res_buf, int&curr_pos) {
+    printf("  \t");
+    string host_output;
+    curr_pos = jump(res_buf, curr_pos, host_output);
+    printf("%s ", host_output.c_str());
+
+    DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
+    int res_type_code = htons(dah->type);
+    curr_pos += 10;
+
+    if (res_type_code == DNS_A) {
+        printf("A ");
+        int x1 = (unsigned char)res_buf[curr_pos];
+        int x2 = (unsigned char)res_buf[curr_pos + 1];
+        int x3 = (unsigned char)res_buf[curr_pos + 2];
+        int x4 = (unsigned char)res_buf[curr_pos + 3];
+        printf("%d.%d.%d.%d ", x1, x2, x3, x4);
+    }
+    else {
+        string res_type = "CNAME";
+        if (res_type_code == DNS_PTR) res_type = "PTR";
+        else if (res_type_code == DNS_NS) res_type = "NS";
+
+        printf("%s ", res_type.c_str());
+
+        string answer_output;
+        jump(res_buf, curr_pos, answer_output);
+        printf("%s ", answer_output.c_str());
+    }
+    printf("TTL = %d \n", 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2));
+
+    curr_pos += htons(dah->len);
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 3)
@@ -309,36 +343,15 @@ int main(int argc, char** argv)
             {
                 printf("  ------------ [answers] ------------------\n");
                 for (int i = 0; i < htons(res_fdh->answers); i++) {
-                    printf("  \t");
-                    string host_output;
-                    curr_pos = jump(res_buf, curr_pos, host_output);
-                    printf("%s ", host_output.c_str());
+                    parse_response(res_buf, curr_pos);
+                }
+            }
 
-                    DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
-                    int res_type_code = htons(dah->type);
-                    curr_pos += 10;
-                   
-                    if (res_type_code == DNS_A) {
-                        printf("A ");
-                        int x1 = (unsigned char)res_buf[curr_pos];
-                        int x2 = (unsigned char)res_buf[curr_pos + 1];
-                        int x3 = (unsigned char)res_buf[curr_pos + 2];
-                        int x4 = (unsigned char)res_buf[curr_pos + 3];
-                        printf("%d.%d.%d.%d ", x1, x2, x3, x4);
-                    }
-                    else {
-                        string res_type = "CNAME";
-                        if (res_type_code == DNS_PTR) res_type = "PTR";
-                        else if (res_type_code == DNS_NS) res_type = "NS";
-
-                        printf("%s ", res_type.c_str());
-
-                        string answer_output;
-                        jump(res_buf, curr_pos, answer_output);
-                    }
-                    printf("TTL = %d \n", 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2));
-
-                    curr_pos += htons(dah->len);
+            if (htons(res_fdh->auth) > 0)
+            {
+                printf("  ------------ [authority] ------------------\n");
+                for (int i = 0; i < htons(res_fdh->auth); i++) {
+                    parse_response(res_buf, curr_pos);
                 }
             }
 
