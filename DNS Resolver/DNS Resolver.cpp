@@ -92,11 +92,26 @@ void read_questions(char* buf, int& curr_pos, int nQuestions) {
     for (int i = 0; i < nQuestions; i++)
     {
         unsigned char length = buf[curr_pos];
+        string output_host;
         while (length != 0) {
-            curr_pos += length + 1;
+            curr_pos++;
+            char* temp = new char[length + 1];
+            memcpy(temp, buf + curr_pos, length);
+            temp[length] = '\0';
+            
+            output_host += temp;
+            delete[] temp;
+
+            curr_pos += length;
             length = buf[curr_pos];
+
+            if (length != 0) output_host += '.';
         }
-        curr_pos += 4;
+        curr_pos++;
+
+        QueryHeader* qh = (QueryHeader*)(buf + curr_pos);
+        printf("  \t%s type %d class %d\n", output_host.c_str(), htons(qh->type), htons(qh->c));
+        curr_pos += 4; // skip query header
     }
 }
 
@@ -282,13 +297,13 @@ int main(int argc, char** argv)
             if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
 
             int curr_pos = 12;
+            printf("  ------------ [questions] ------------\n");
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
-            curr_pos++;
 
             for (int i = 0; i < htons(res_fdh->answers); i++) {
-                printf("curr_pos %d\n", curr_pos);
+                //printf("curr_pos %d\n", curr_pos);
                 curr_pos = jump(res_buf, curr_pos);
-                printf("curr_pos %d\n", curr_pos);
+                //printf("curr_pos %d\n", curr_pos);
 
                 DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
                 int query_type = htons(dah->type);
