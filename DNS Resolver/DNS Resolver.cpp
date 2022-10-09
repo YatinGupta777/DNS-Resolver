@@ -355,6 +355,14 @@ int main(int argc, char** argv)
                 }
             }
 
+            if (htons(res_fdh->additional) > 0)
+            {
+                printf("  ------------ [additional] ------------------\n");
+                for (int i = 0; i < htons(res_fdh->additional); i++) {
+                    parse_response(res_buf, curr_pos);
+                }
+            }
+
             break;
         }
         // error checking here
