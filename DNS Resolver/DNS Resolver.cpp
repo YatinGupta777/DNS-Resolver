@@ -186,7 +186,7 @@ int main(int argc, char** argv)
     }
 
     USHORT TXID = htons(1);
-    printf("Query : %s, type %d, TXID %.4X\n", lookup_host, query_type, TXID);
+    printf("Query : %s, type %d, TXID 0x%.4X\n", lookup_host, ntohs(query_type), TXID);
     printf("Server : %s\n", dns_server_ip);
     printf("***************************************\n");
 
@@ -236,10 +236,11 @@ int main(int argc, char** argv)
     remote.sin_addr.S_un.S_addr = inet_addr(dns_server_ip); // server’s IP
     remote.sin_port = htons(53); // DNS port on serve
 
-    int count = 0;
-    while (count++ < MAX_ATTEMPTS)
+    int current_attempt = 0;
+    while (current_attempt < MAX_ATTEMPTS)
     {
-        printf("Attempt %d with %d bytes...", count, sizeof(req_buf));
+        printf("Attempt %d with %d bytes...", current_attempt, pkt_size);
+        current_attempt++;
         if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
         {
             printf("send to() generated error %d\n", WSAGetLastError());
@@ -289,7 +290,7 @@ int main(int argc, char** argv)
             printf("response in with %d bytes\n", bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
 
-            printf("  TXID %.4X, flags %.4X, questions %d, answers %d, authority %d, additional %d\n",
+            printf("  TXID 0x%.4X, flags 0x%.4X, questions %d, answers %d, authority %d, additional %d\n",
                 htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
             
             int rcode = htons(res_fdh->flags) & 0x000f;
