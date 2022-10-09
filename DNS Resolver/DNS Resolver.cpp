@@ -299,8 +299,8 @@ int main(int argc, char** argv)
         int available = select(0, &fd, NULL, NULL, &tp);
 
         if (available == 0) {
-            printf("timeout\n");
-            return 0;
+            //printf("timeout\n");
+            continue;
         }
 
         if (available == SOCKET_ERROR)
