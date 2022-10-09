@@ -298,7 +298,7 @@ int main(int argc, char** argv)
                     printf("%d.%d.%d.%d\n", x1, x2, x3, x4);
                 }
                 else {
-
+                    jump(res_buf, curr_pos);
                 }
 
                 curr_pos += htons(dah->len);
