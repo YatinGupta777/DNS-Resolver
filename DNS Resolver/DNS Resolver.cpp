@@ -248,8 +248,8 @@ int main(int argc, char** argv)
 {
     if (argc != 3)
     {
-        printf("Please pass only URL in format -> scheme://host[:port][/path][?query][#fragment]\n");
-        printf("OR\n");
+        printf("Invalid Usage: Required [Lookup hostname/IP] [DNS server IP]");
+        return 0;
     }
 
     WSADATA wsaData;
