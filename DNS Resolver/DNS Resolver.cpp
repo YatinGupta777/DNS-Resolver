@@ -122,7 +122,13 @@ void cleanup(SOCKET sock, char* req_buf)
     delete[] req_buf;
 }
 
-int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
+int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& count) {
+
+    if ((count > (bytes_received - 12) / 2))
+    {
+        printf("\n\t++ invalid record: jump loop");
+        exit(0);
+    }
 
     unsigned char current_value = (unsigned char)res_buf[curr_pos];
     //printf("current_value %d\n", current_value);
@@ -150,8 +156,8 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
             printf("++ invalid record: jump beyond packet boundary");
             exit(0);
         }
-
-        jump(res_buf, off, output, bytes_received);
+        count++;
+        jump(res_buf, off, output, bytes_received, count);
         return curr_pos + 2;
     }
     else {
@@ -171,14 +177,16 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
         if ((unsigned char)res_buf[curr_pos] != 0) output += ".";
 
         delete[] str;
-        jump(res_buf, curr_pos, output, bytes_received);
+        count++;
+        jump(res_buf, curr_pos, output, bytes_received, count);
     }
 }
 
 void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
     printf("  \t");
     string host_output;
-    curr_pos = jump(res_buf, curr_pos, host_output, bytes_received);
+    int count = 0;
+    curr_pos = jump(res_buf, curr_pos, host_output, bytes_received, count);
     printf("%s ", host_output.c_str());
 
     DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
@@ -213,7 +221,8 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
         printf("%s ", res_type.c_str());
 
         string answer_output;
-        jump(res_buf, curr_pos, answer_output, bytes_received);
+        int count = 0;
+        jump(res_buf, curr_pos, answer_output, bytes_received, count);
         printf("%s ", answer_output.c_str());
     }
     printf("TTL = %d \n", 256 * (int)htons(dah->ttl) + (int)htons(dah->ttl2));
