@@ -124,9 +124,13 @@ void cleanup(SOCKET sock, char* req_buf)
 
 int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& count) {
 
-    if ((count > (bytes_received - 12) / 2))
+    if ((count > (bytes_received - sizeof(FixedDNSheader)) / 2))
     {
         printf("\n\t++ invalid record: jump loop");
+        exit(0);
+    }
+    if (curr_pos >= bytes_received) {
+        printf("++ invalid section: not enough records");
         exit(0);
     }
 
