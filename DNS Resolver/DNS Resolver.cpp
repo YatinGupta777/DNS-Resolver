@@ -133,6 +133,10 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
     }
     else if (current_value >= 0xC0)
     {
+        if (curr_pos + 1 >= bytes_received) {
+            printf("  ++ invalid record: truncated jump offset");
+            exit(0);
+        }
         //printf("Compressed\n");
         int off = ((res_buf[curr_pos] & 0x3F) << 8) + res_buf[curr_pos + 1];
 
@@ -142,7 +146,7 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
             exit(0);
         }
 
-        if (off > bytes_received) {
+        if (off >= bytes_received) {
             printf("  ++ invalid record: jump beyond packet boundary");
             exit(0);
         }
@@ -181,6 +185,11 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
     int res_type_code = htons(dah->type);
 
     curr_pos += sizeof(DNSanswerHdr);
+
+    if (curr_pos >= bytes_received) {
+        printf(" ++ invalid record: truncated RR answer header");
+        exit(0);
+    }
 
     if (res_type_code == DNS_A) {
         printf("A ");
