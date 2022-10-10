@@ -152,6 +152,12 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
     }
     else {
         curr_pos++; // skip byte size
+
+        if (((curr_pos + current_value)) > bytes_received) {
+            printf("  ++ Invalid record: truncated name");
+            exit(0);
+        }
+
         char* str = new char[current_value + 1];
         memcpy(str, res_buf + curr_pos, current_value);
         str[current_value] = '\0';
