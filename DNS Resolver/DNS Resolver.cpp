@@ -191,7 +191,8 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
         exit(0);
     }
 
-    if (curr_pos + dah->len >= bytes_received) {
+   
+   if (curr_pos + htons(dah->len) > bytes_received) {
         printf("  ++ invalid record: RR value length stretches the answer beyond packet");
         exit(0);
     }
