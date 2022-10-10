@@ -385,6 +385,7 @@ int main(int argc, char** argv)
             if (bytes_received == SOCKET_ERROR)
             {
                 printf("socket error %d\n", WSAGetLastError());
+                cleanup(sock, req_buf);
                 return 0;
             };
 
@@ -404,6 +405,7 @@ int main(int argc, char** argv)
             if (fdh->ID != res_fdh->ID)
             {
                 printf("  ++ invalid reply: TXID mismatch, sent 0x%.4X, received 0x%.4X", fdh->ID, res_fdh->ID);
+                cleanup(sock, req_buf);
                 return 0;
             }
 
@@ -413,6 +415,7 @@ int main(int argc, char** argv)
             if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
             else {
                 printf("  failed with Rcode = %d\n", rcode);
+                cleanup(sock, req_buf);
                 return 0;
             }
 
@@ -443,7 +446,7 @@ int main(int argc, char** argv)
                     parse_response(res_buf, curr_pos, bytes_received);
                 }
             }
-
+            cleanup(sock, req_buf);
             break;
         }
         // error checking here
