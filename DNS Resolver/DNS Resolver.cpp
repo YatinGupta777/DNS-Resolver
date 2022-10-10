@@ -115,6 +115,13 @@ void read_questions(char* buf, int& curr_pos, int nQuestions) {
     }
 }
 
+void cleanup(SOCKET sock, char* req_buf)
+{
+    WSACleanup();
+    closesocket(sock);
+    delete[] req_buf;
+}
+
 int jump(char* res_buf, int curr_pos, string& output) {
 
     unsigned char current_value = (unsigned char)res_buf[curr_pos];
@@ -154,7 +161,8 @@ void parse_response(char* res_buf, int&curr_pos) {
 
     DNSanswerHdr* dah = (DNSanswerHdr*)(res_buf + curr_pos);
     int res_type_code = htons(dah->type);
-    curr_pos += 10;
+
+    curr_pos += sizeof(DNSanswerHdr);
 
     if (res_type_code == DNS_A) {
         printf("A ");
@@ -299,7 +307,7 @@ int main(int argc, char** argv)
         int available = select(0, &fd, NULL, NULL, &tp);
 
         if (available == 0) {
-            //printf("timeout\n");
+            printf("timeout in ms\n");
             continue;
         }
 
@@ -323,6 +331,12 @@ int main(int argc, char** argv)
                 printf("bytes_received to() generated error %d\n", WSAGetLastError());
                 return 0;
             };
+
+            if (bytes_received < sizeof(FixedDNSheader)) {
+                printf("  ++  invalid reply: packet smaller than fixed DNS header");
+                cleanup(sock, req_buf);
+                return 0;
+            }
             
            // int off = ( (ans[curPos] & 0x3F) << 8) + ans[curPos + 1];
             printf("response in with %d bytes\n", bytes_received);
@@ -346,7 +360,7 @@ int main(int argc, char** argv)
                 return 0;
             }
 
-            int curr_pos = 12;
+            int curr_pos = sizeof(FixedDNSheader);
             printf("  ------------ [questions] ------------\n");
             read_questions(res_buf, curr_pos, htons(res_fdh->questions));
 
