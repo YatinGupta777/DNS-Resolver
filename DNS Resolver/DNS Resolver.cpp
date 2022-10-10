@@ -87,10 +87,14 @@ void makeDNSQuestion(char* buf, char* host)
     buf[buf_position] = 0;
 }
 
-void read_questions(char* buf, int& curr_pos, int nQuestions) {
+void read_questions(char* buf, int& curr_pos, int nQuestions, int bytes_received) {
 
     for (int i = 0; i < nQuestions; i++)
     {
+        if (curr_pos >= bytes_received) {
+            printf("++ invalid section: not enough records");
+            exit(0);
+        }
         unsigned char length = buf[curr_pos];
         string output_host;
         while (length != 0) {
@@ -103,6 +107,12 @@ void read_questions(char* buf, int& curr_pos, int nQuestions) {
             delete[] temp;
 
             curr_pos += length;
+
+            if (curr_pos >= bytes_received) {
+                printf("++ invalid section: question malformed");
+                exit(0);
+            }
+
             length = buf[curr_pos];
 
             if (length != 0) output_host += '.';
@@ -168,7 +178,7 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& c
         curr_pos++; // skip byte size
 
         if (((curr_pos + current_value)) > bytes_received) {
-            printf("++ Invalid record: truncated name");
+            printf("++ invalid record: truncated name");
             exit(0);
         }
 
@@ -199,13 +209,13 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
     curr_pos += sizeof(DNSanswerHdr);
 
     if (curr_pos >= bytes_received) {
-        printf(" ++ invalid record: truncated RR answer header");
+        printf("\n\t++ invalid record: truncated RR answer header");
         exit(0);
     }
 
    
    if (curr_pos + htons(dah->len) > bytes_received) {
-        printf("  ++ invalid record: RR value length stretches the answer beyond packet");
+        printf("\n\t++ invalid record: RR value length stretches the answer beyond packet");
         exit(0);
     }
 
@@ -408,7 +418,7 @@ int main(int argc, char** argv)
 
             int curr_pos = sizeof(FixedDNSheader);
             printf("  ------------ [questions] ------------\n");
-            read_questions(res_buf, curr_pos, htons(res_fdh->questions));
+            read_questions(res_buf, curr_pos, htons(res_fdh->questions), bytes_received);
 
             if (htons(res_fdh->answers) > 0)
             {
