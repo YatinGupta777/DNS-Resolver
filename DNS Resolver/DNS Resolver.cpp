@@ -328,12 +328,12 @@ int main(int argc, char** argv)
 
             if (bytes_received == SOCKET_ERROR)
             {
-                printf("bytes_received to() generated error %d\n", WSAGetLastError());
+                printf("socket error %d\n", WSAGetLastError());
                 return 0;
             };
 
             if (bytes_received < sizeof(FixedDNSheader)) {
-                printf("  ++  invalid reply: packet smaller than fixed DNS header");
+                printf("\n  ++  invalid reply: packet smaller than fixed DNS header");
                 cleanup(sock, req_buf);
                 return 0;
             }
