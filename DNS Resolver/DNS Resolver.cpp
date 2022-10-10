@@ -191,6 +191,11 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
         exit(0);
     }
 
+    if (curr_pos + dah->len >= bytes_received) {
+        printf("  ++ invalid record: RR value length stretches the answer beyond packet");
+        exit(0);
+    }
+
     if (res_type_code == DNS_A) {
         printf("A ");
         int x1 = (unsigned char)res_buf[curr_pos];
