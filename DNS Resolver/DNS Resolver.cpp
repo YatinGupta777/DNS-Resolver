@@ -134,7 +134,7 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
     else if (current_value >= 0xC0)
     {
         if (curr_pos + 1 >= bytes_received) {
-            printf("  ++ invalid record: truncated jump offset");
+            printf("++ invalid record: truncated jump offset");
             exit(0);
         }
         //printf("Compressed\n");
@@ -142,12 +142,12 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
 
         if (off < sizeof(FixedDNSheader))
         {
-            printf("  ++ invalid record: jump into fixed DNS header");
+            printf("++ invalid record: jump into fixed DNS header");
             exit(0);
         }
 
         if (off >= bytes_received) {
-            printf("  ++ invalid record: jump beyond packet boundary");
+            printf("++ invalid record: jump beyond packet boundary");
             exit(0);
         }
 
@@ -158,7 +158,7 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received) {
         curr_pos++; // skip byte size
 
         if (((curr_pos + current_value)) > bytes_received) {
-            printf("  ++ Invalid record: truncated name");
+            printf("++ Invalid record: truncated name");
             exit(0);
         }
 
