@@ -331,6 +331,13 @@ int main(int argc, char** argv)
             printf("  TXID 0x%.4X, flags 0x%.4X, questions %d, answers %d, authority %d, additional %d\n",
                 htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
             
+            if (fdh->ID != res_fdh->ID)
+            {
+                printf("  ++ invalid reply: TXID mismatch, sent 0x%.4X, received 0x%.4X", fdh->ID, res_fdh->ID);
+                return 0;
+            }
+
+
             int rcode = htons(res_fdh->flags) & 0x000f;
 
             if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
