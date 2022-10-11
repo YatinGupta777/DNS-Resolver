@@ -407,6 +407,8 @@ int main(int argc, char** argv)
                 return 0;
             };
 
+            //printf("bytes_received %d\n", bytes_received);
+
             if (bytes_received < sizeof(FixedDNSheader)) {
                 printf("\n  ++  invalid reply: packet smaller than fixed DNS header");
                 cleanup();
@@ -417,7 +419,7 @@ int main(int argc, char** argv)
             printf(" response in %d ms with %d bytes\n", (end_t-start_t), bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
 
-            printf("  TXID 0x%.4X, flags 0x%.4X, questions %d, answers %d, authority %d, additional %d\n",
+            printf("  TXID 0x%.4X flags 0x%.4X questions %d answers %d authority %d additional %d\n",
                 htons(res_fdh->ID), htons(res_fdh->flags), htons(res_fdh->questions), htons(res_fdh->answers), htons(res_fdh->auth), htons(res_fdh->additional));
             
             if (fdh->ID != res_fdh->ID)
