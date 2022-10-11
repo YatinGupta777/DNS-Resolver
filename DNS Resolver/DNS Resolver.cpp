@@ -215,14 +215,14 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
     curr_pos += sizeof(DNSanswerHdr);
 
     if (curr_pos >= bytes_received) {
-        printf("\n\t++ invalid record: truncated RR answer header");
+        printf("  ++ invalid record: truncated RR answer header");
         cleanup();
         exit(0);
     }
 
    
    if (curr_pos + htons(dah->len) > bytes_received) {
-        printf("\n\t++ invalid record: RR value length stretches the answer beyond packet");
+        printf(" ++ invalid record: RR value length stretches the answer beyond packet");
         cleanup();
         exit(0);
     }
