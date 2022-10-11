@@ -353,7 +353,7 @@ int main(int argc, char** argv)
         current_attempt++;
         if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
         {
-            printf("send to() generated error %d\n", WSAGetLastError());
+            printf("socket generated error %d\n", WSAGetLastError());
             cleanup();;
             return 0;
         };
@@ -380,7 +380,7 @@ int main(int argc, char** argv)
 
         if (available == SOCKET_ERROR)
         {
-            printf("select error %d\n", WSAGetLastError());
+            printf("socket generated error %d\n", WSAGetLastError());
             cleanup();;
             delete[] res_buf;
             return 0;
