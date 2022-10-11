@@ -296,7 +296,7 @@ int main(int argc, char** argv)
     }
 
     USHORT TXID = htons(1);
-    printf("Query : %s, type %d, TXID 0x%.4X\n", lookup_host, ntohs(query_type), ntohs(TXID));
+    printf("Query  : %s, type %d, TXID 0x%.4X\n", lookup_host, ntohs(query_type), ntohs(TXID));
     printf("Server : %s\n", dns_server_ip);
     printf("***************************************\n");
 
@@ -347,8 +347,10 @@ int main(int argc, char** argv)
     remote.sin_port = htons(53); // DNS port on serve
 
     int current_attempt = 0;
+    clock_t start_t, end_t;
     while (current_attempt < MAX_ATTEMPTS)
     {
+        start_t = clock();
         printf("Attempt %d with %d bytes...", current_attempt, pkt_size);
         current_attempt++;
         if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
@@ -371,8 +373,9 @@ int main(int argc, char** argv)
         char* res_buf = new char[MAX_DNS_LEN];
         int available = select(0, &fd, NULL, NULL, &tp);
 
+        end_t = clock();
         if (available == 0) {
-            printf("timeout in ms\n");
+            printf("timeout in %d ms\n", end_t-start_t);
             delete[] res_buf;
             continue;
         }
@@ -410,8 +413,8 @@ int main(int argc, char** argv)
                 delete[] res_buf;
                 return 0;
             }
-            
-            printf("response in with %d bytes\n", bytes_received);
+            end_t = clock();
+            printf(" response in %d ms with %d bytes\n", (end_t-start_t), bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
 
             printf("  TXID 0x%.4X, flags 0x%.4X, questions %d, answers %d, authority %d, additional %d\n",
