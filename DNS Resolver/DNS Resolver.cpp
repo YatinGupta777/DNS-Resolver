@@ -1,6 +1,3 @@
-// DNS Resolver.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include "pch.h"
 #include <iostream>
 #pragma comment(lib, "ws2_32.lib")
@@ -65,6 +62,16 @@ public:
 };
 #pragma pack(pop)
 
+SOCKET sock;
+char* req_buf;
+
+void cleanup()
+{
+    WSACleanup();
+    closesocket(sock);
+    delete[] req_buf;
+}
+
 void makeDNSQuestion(char* buf, char* host)
 {
     int buf_position = 0;
@@ -93,6 +100,7 @@ void read_questions(char* buf, int& curr_pos, int nQuestions, int bytes_received
     {
         if (curr_pos >= bytes_received) {
             printf("++ invalid section: not enough records");
+            cleanup();
             exit(0);
         }
         unsigned char length = buf[curr_pos];
@@ -110,6 +118,7 @@ void read_questions(char* buf, int& curr_pos, int nQuestions, int bytes_received
 
             if (curr_pos >= bytes_received) {
                 printf("++ invalid section: question malformed");
+                cleanup();
                 exit(0);
             }
 
@@ -125,27 +134,21 @@ void read_questions(char* buf, int& curr_pos, int nQuestions, int bytes_received
     }
 }
 
-void cleanup(SOCKET sock, char* req_buf)
-{
-    WSACleanup();
-    closesocket(sock);
-    delete[] req_buf;
-}
-
 int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& count) {
 
     if ((count > (bytes_received - sizeof(FixedDNSheader)) / 2))
     {
         printf("\n\t++ invalid record: jump loop");
+        cleanup();
         exit(0);
     }
     if (curr_pos >= bytes_received) {
         printf("++ invalid section: not enough records");
+        cleanup();
         exit(0);
     }
 
     unsigned char current_value = (unsigned char)res_buf[curr_pos];
-    //printf("current_value %d\n", current_value);
 
     if (current_value == 0)
     {
@@ -155,19 +158,21 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& c
     {
         if (curr_pos + 1 >= bytes_received) {
             printf("++ invalid record: truncated jump offset");
+            cleanup();
             exit(0);
         }
-        //printf("Compressed\n");
         int off = ((res_buf[curr_pos] & 0x3F) << 8) + res_buf[curr_pos + 1];
 
         if (off < sizeof(FixedDNSheader))
         {
             printf("++ invalid record: jump into fixed DNS header");
+            cleanup();
             exit(0);
         }
 
         if (off >= bytes_received) {
             printf("++ invalid record: jump beyond packet boundary");
+            cleanup();
             exit(0);
         }
         count++;
@@ -179,6 +184,7 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& c
 
         if (((curr_pos + current_value)) > bytes_received) {
             printf("++ invalid record: truncated name");
+            cleanup();
             exit(0);
         }
 
@@ -210,12 +216,14 @@ void parse_response(char* res_buf, int&curr_pos, int bytes_received) {
 
     if (curr_pos >= bytes_received) {
         printf("\n\t++ invalid record: truncated RR answer header");
+        cleanup();
         exit(0);
     }
 
    
    if (curr_pos + htons(dah->len) > bytes_received) {
         printf("\n\t++ invalid record: RR value length stretches the answer beyond packet");
+        cleanup();
         exit(0);
     }
 
@@ -293,7 +301,7 @@ int main(int argc, char** argv)
     printf("***************************************\n");
 
     int pkt_size = strlen(lookup_host) + 2 + sizeof(FixedDNSheader) + sizeof(QueryHeader);
-    char* req_buf = new char[pkt_size];
+    req_buf = new char[pkt_size];
     
     FixedDNSheader* fdh = (FixedDNSheader*)req_buf;
     QueryHeader* qh = (QueryHeader*)(req_buf + pkt_size - sizeof(QueryHeader));
@@ -314,7 +322,7 @@ int main(int argc, char** argv)
 
     makeDNSQuestion((char*)(fdh + 1), original_link);
 
-    SOCKET sock = socket(AF_INET, SOCK_DGRAM, 0);
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == INVALID_SOCKET)
     {
         printf("socket() generated error %d\n", WSAGetLastError());
@@ -346,6 +354,7 @@ int main(int argc, char** argv)
         if (sendto(sock, req_buf, pkt_size, 0, (struct sockaddr*)&remote, sizeof(remote)) == SOCKET_ERROR)
         {
             printf("send to() generated error %d\n", WSAGetLastError());
+            cleanup();;
             return 0;
         };
         // get ready to receive
@@ -364,12 +373,16 @@ int main(int argc, char** argv)
 
         if (available == 0) {
             printf("timeout in ms\n");
+            cleanup();;
+            delete[] res_buf;
             continue;
         }
 
         if (available == SOCKET_ERROR)
         {
             printf("select error %d\n", WSAGetLastError());
+            cleanup();;
+            delete[] res_buf;
             return 0;
         };
 
@@ -378,24 +391,27 @@ int main(int argc, char** argv)
             int bytes_received = recvfrom(sock, res_buf, MAX_DNS_LEN, 0, (struct sockaddr*) &res_server, &res_server_size);
 
             if (res_server.sin_addr.S_un.S_addr != remote.sin_addr.S_un.S_addr || res_server.sin_port != remote.sin_port) {
-                printf("COMPLAIN\n");
+                printf("++ invalid reply: wrong server replied\n");
+                cleanup();;
+                delete[] res_buf;
                 return 0;
             }
 
             if (bytes_received == SOCKET_ERROR)
             {
                 printf("socket error %d\n", WSAGetLastError());
-                cleanup(sock, req_buf);
+                cleanup();;
+                delete[] res_buf;
                 return 0;
             };
 
             if (bytes_received < sizeof(FixedDNSheader)) {
                 printf("\n  ++  invalid reply: packet smaller than fixed DNS header");
-                cleanup(sock, req_buf);
+                cleanup();;
+                delete[] res_buf;
                 return 0;
             }
             
-           // int off = ( (ans[curPos] & 0x3F) << 8) + ans[curPos + 1];
             printf("response in with %d bytes\n", bytes_received);
             FixedDNSheader* res_fdh = (FixedDNSheader*)res_buf;
 
@@ -405,7 +421,7 @@ int main(int argc, char** argv)
             if (fdh->ID != res_fdh->ID)
             {
                 printf("  ++ invalid reply: TXID mismatch, sent 0x%.4X, received 0x%.4X", fdh->ID, res_fdh->ID);
-                cleanup(sock, req_buf);
+                cleanup();;
                 return 0;
             }
 
@@ -415,7 +431,7 @@ int main(int argc, char** argv)
             if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
             else {
                 printf("  failed with Rcode = %d\n", rcode);
-                cleanup(sock, req_buf);
+                cleanup();;
                 return 0;
             }
 
@@ -446,10 +462,10 @@ int main(int argc, char** argv)
                     parse_response(res_buf, curr_pos, bytes_received);
                 }
             }
-            cleanup(sock, req_buf);
+            cleanup();;
+            delete[] res_buf;
             break;
         }
-        // error checking here
     }
 
 }
