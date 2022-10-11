@@ -373,7 +373,6 @@ int main(int argc, char** argv)
 
         if (available == 0) {
             printf("timeout in ms\n");
-            cleanup();;
             delete[] res_buf;
             continue;
         }
@@ -381,7 +380,7 @@ int main(int argc, char** argv)
         if (available == SOCKET_ERROR)
         {
             printf("socket generated error %d\n", WSAGetLastError());
-            cleanup();;
+            cleanup();
             delete[] res_buf;
             return 0;
         };
@@ -392,7 +391,7 @@ int main(int argc, char** argv)
 
             if (res_server.sin_addr.S_un.S_addr != remote.sin_addr.S_un.S_addr || res_server.sin_port != remote.sin_port) {
                 printf("++ invalid reply: wrong server replied\n");
-                cleanup();;
+                cleanup();
                 delete[] res_buf;
                 return 0;
             }
@@ -400,14 +399,14 @@ int main(int argc, char** argv)
             if (bytes_received == SOCKET_ERROR)
             {
                 printf("socket error %d\n", WSAGetLastError());
-                cleanup();;
+                cleanup();
                 delete[] res_buf;
                 return 0;
             };
 
             if (bytes_received < sizeof(FixedDNSheader)) {
                 printf("\n  ++  invalid reply: packet smaller than fixed DNS header");
-                cleanup();;
+                cleanup();
                 delete[] res_buf;
                 return 0;
             }
@@ -421,7 +420,7 @@ int main(int argc, char** argv)
             if (fdh->ID != res_fdh->ID)
             {
                 printf("  ++ invalid reply: TXID mismatch, sent 0x%.4X, received 0x%.4X", fdh->ID, res_fdh->ID);
-                cleanup();;
+                cleanup();
                 return 0;
             }
 
@@ -431,7 +430,7 @@ int main(int argc, char** argv)
             if (rcode == 0) printf("  succeeded with Rcode = %d\n", rcode);
             else {
                 printf("  failed with Rcode = %d\n", rcode);
-                cleanup();;
+                cleanup();
                 return 0;
             }
 
@@ -462,7 +461,7 @@ int main(int argc, char** argv)
                     parse_response(res_buf, curr_pos, bytes_received);
                 }
             }
-            cleanup();;
+            cleanup();
             delete[] res_buf;
             break;
         }
