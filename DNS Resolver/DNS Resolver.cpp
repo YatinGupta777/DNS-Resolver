@@ -161,7 +161,7 @@ int jump(char* res_buf, int curr_pos, string& output, int bytes_received, int& c
             cleanup();
             exit(0);
         }
-        int off = ((res_buf[curr_pos] & 0x3F) << 8) + res_buf[curr_pos + 1];
+        int off = ((((unsigned char)res_buf[curr_pos]) & 0x3F) << 8) + (unsigned char)res_buf[curr_pos + 1];
 
         if (off < sizeof(FixedDNSheader))
         {
