@@ -422,7 +422,7 @@ int main(int argc, char** argv)
             
             if (fdh->ID != res_fdh->ID)
             {
-                printf("  ++ invalid reply: TXID mismatch, sent 0x%.4X, received 0x%.4X", fdh->ID, res_fdh->ID);
+                printf("  ++ invalid reply: TXID mismatch, sent 0x%.4X, received 0x%.4X", htons(fdh->ID), htons(res_fdh->ID));
                 cleanup();
                 return 0;
             }
