@@ -296,7 +296,7 @@ int main(int argc, char** argv)
     }
 
     USHORT TXID = htons(1);
-    printf("Query : %s, type %d, TXID 0x%.4X\n", lookup_host, ntohs(query_type), TXID);
+    printf("Query : %s, type %d, TXID 0x%.4X\n", lookup_host, ntohs(query_type), ntohs(TXID));
     printf("Server : %s\n", dns_server_ip);
     printf("***************************************\n");
 
